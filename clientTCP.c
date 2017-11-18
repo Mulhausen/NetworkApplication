@@ -4,15 +4,28 @@
 int main(int argc , char *argv[])
 {
     int32_t socketDesc;
+    char* deviceIPaddr;
 
     char msgToSend[MAX_SIZE_OF_TCP_MSG] = {0};
     char msgReply[MAX_SIZE_OF_TCP_MSG] = {0};
+  
+    if(argc < 2)
+    {
+        printf("No: The client launched without parameters with the default device IP: %s\n", DEFAULT_DEVICE_INET_ADDR);
+        printf("Usage: %s [device hostname/IP]\n\n", argv[0]);
+
+        deviceIPaddr = DEFAULT_DEVICE_INET_ADDR;
+    }
+    else
+    {     
+        deviceIPaddr = argv[1];
+    }
      
     socketDesc = createSocket();
          
-    if( connectToDevice(socketDesc, DEVICE_INET_ADDR, TCP_COMMUNICATION_PORT) )
+    if( connectToDevice(socketDesc, deviceIPaddr, TCP_COMMUNICATION_PORT) )
     {
-        printf("Client can't be connected to the device. The program will be closed\n");
+        printf("ERROR: Client can't be connected to the device. The program will be closed\n");
         return(-1);
     }
 
@@ -25,20 +38,31 @@ int main(int argc , char *argv[])
     /* Communicating with the device with commands entered from the keyboard */
     while(1)
     {
-        printf("Enter command : ");
-        fgetsSafe(msgToSend, MAX_SIZE_OF_TCP_MSG);
+        getMsgFromKeyboard(msgToSend);
 
         /* Send user command */
         sendMsgToDevice(socketDesc, msgToSend); 
          
         /* Waiting for reply from the device */
         recvMsgFromDevice(socketDesc, msgReply, MAX_SIZE_OF_TCP_MSG);
-        
+
+        #ifdef DEBUG_LOG        
         printf("Reply from the device: %s \n", msgReply); 
         puts("------------------------------\n");
+        #endif
     }
     
     return 0;
+}
+
+
+void getMsgFromKeyboard(char* msg)
+{
+    #ifdef DEBUG_LOG
+    printf("Enter command : ");
+    #endif
+
+    fgetsSafe(msg, MAX_SIZE_OF_TCP_MSG);
 }
 
 
