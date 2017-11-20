@@ -10,9 +10,11 @@
 #include <pthread.h>     /* for threading , link with lpthread */
 #include "globals.h"
 
+#include "SCPI/scpi-def.h"
+
 
 #define DEBUG_LOG
-#define ECHO_MODE
+/* #define ECHO_MODE */
 /* #define GREETINGS_FOR_CLIENT */
 
 #define MAX_SIZE_OF_TCP_MSG         (2000u)

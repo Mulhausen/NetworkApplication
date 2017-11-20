@@ -5,12 +5,16 @@ uint8_t numConnections = 0u;
 pthread_t threads[MAX_NUM_CONNECTIONS];
 int acceptSocketsDesc[MAX_NUM_CONNECTIONS];
  
- 
+void initSCPI();
+
+
 int main(int argc , char *argv[])
 {
     int socketDesc, acceptSocketDesc;
     struct sockaddr_in client;
     numConnections = 0u;
+
+    initSCPI();
 
     socketDesc = createSocket();
      
@@ -48,14 +52,18 @@ void *connectHandler(void *socket_desc)
     /* Get the socket descriptor */
     int sock = *(int*)socket_desc;
     int read_size;
-    char *message , client_message[MAX_SIZE_OF_TCP_MSG];
+    char client_message[MAX_SIZE_OF_TCP_MSG];
     
     #ifdef GREETINGS_FOR_CLIENT
+    char *message;
     /* Send a message to the client */
     message = "It's Mulhousen RTSA. Send your SCPI commands to control the device\n";
     write(sock , message , strlen(message));
     #endif
      
+    /* Provide a pointer to the socket to SCPI-handler */
+    scpi_context.user_context = &sock;
+
     /* Receive a message from client */
     while( (read_size = recv(sock , client_message , MAX_SIZE_OF_TCP_MSG , 0)) > 0 )
     {
@@ -63,8 +71,9 @@ void *connectHandler(void *socket_desc)
         printf("Received a message from client: %s\n", client_message);
         puts("--------------------------------\n");
         
-        /* TODO: Handle SCPI command */
-        
+        /* Handle SCPI command */
+        SCPI_Input(&scpi_context, client_message, read_size);
+
         #ifdef ECHO_MODE
         /* Send the message back to client */
         write(sock , client_message , read_size);
@@ -165,4 +174,18 @@ int16_t createThread(int socketfd)
     //pthread_join(thread, NULL);
     
     return(RES_SUCCESS);
+}
+
+void initSCPI()
+{
+    /* user_context will be pointer to socket */
+    scpi_context.user_context = NULL;
+
+    SCPI_Init(&scpi_context,
+            scpi_commands,
+            &scpi_interface,
+            scpi_units_def,
+            SCPI_IDN1, SCPI_IDN2, SCPI_IDN3, SCPI_IDN4,
+            scpi_input_buffer, SCPI_INPUT_BUFFER_LENGTH,
+            scpi_error_queue_data, SCPI_ERROR_QUEUE_SIZE);
 }
